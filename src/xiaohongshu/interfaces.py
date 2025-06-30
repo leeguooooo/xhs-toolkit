@@ -41,8 +41,8 @@ class IContentFiller(ABC):
         pass
     
     @abstractmethod
-    async def fill_tags(self, tags: List[str]) -> bool:
-        """填写标签"""
+    async def fill_topics(self, topics: List[str]) -> bool:
+        """填写话题"""
         pass
 
 

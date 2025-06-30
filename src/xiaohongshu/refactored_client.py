@@ -120,32 +120,38 @@ class RefactoredXHSClient(IXHSClient):
         
         return await self.file_uploader.upload_files(files, file_type)
     
-    async def fill_content_only(self, title: str, content: str, tags: list = None) -> Dict[str, bool]:
+    async def fill_content_only(self, title: str, content: str, topics: list = None) -> Dict[str, bool]:
         """
         仅填写内容，不发布笔记
         
         展示组件的独立使用能力
         
         Args:
-            title: 标题
-            content: 内容
-            tags: 标签列表
+            title: 笔记标题
+            content: 笔记内容
+            topics: 话题列表
             
         Returns:
             各项填写结果
         """
-        logger.info("📝 独立填写笔记内容")
+        logger.info("📝 开始填写内容（仅内容填写模式）")
         
         results = {}
         
-        # 独立使用内容填写器
+        # 填写标题
         results["title"] = await self.content_filler.fill_title(title)
         results["content"] = await self.content_filler.fill_content(content)
         
-        if tags:
-            results["tags"] = await self.content_filler.fill_tags(tags)
+        # 填写话题（如果提供）
+        if topics:
+            results["topics"] = await self.content_filler.fill_topics(topics)
         
-        return results
+        logger.info(f"📊 内容填写完成: {results}")
+        
+        return {
+            "results": results,
+            "content_info": self.content_filler.get_current_content(),
+        }
     
     def get_current_page_info(self) -> Dict[str, Any]:
         """

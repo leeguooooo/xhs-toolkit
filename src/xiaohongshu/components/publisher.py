@@ -222,12 +222,15 @@ class XHSPublisher(IPublisher):
             if not success:
                 raise PublishError("内容填写失败", publish_step="内容填写")
             
-            # 填写标签
-            if note.tags:
-                success = await self.content_filler.fill_tags(note.tags)
+            # 第三步：填写话题
+            if note.topics:
+                logger.info(f"🏷️ 填写话题: {note.topics}")
+                success = await self.content_filler.fill_topics(note.topics)
                 if not success:
-                    logger.warning("⚠️ 标签填写失败，但不影响发布")
-                    
+                    logger.warning("⚠️ 话题填写失败，但继续发布流程")
+            else:
+                logger.info("📝 未提供话题，跳过话题填写")
+            
         except Exception as e:
             if isinstance(e, PublishError):
                 raise

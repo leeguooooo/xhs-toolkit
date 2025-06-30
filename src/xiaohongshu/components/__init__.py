@@ -4,14 +4,17 @@
 包含各个功能组件的具体实现，遵循SOLID原则
 """
 
-from .publisher import XHSPublisher
 from .file_uploader import XHSFileUploader
 from .content_filler import XHSContentFiller
+from .topic_automation import XHSTopicAutomation, AdvancedXHSTopicAutomation
+from .publisher import XHSPublisher
 from .data_collector import XHSDataCollector
 
 __all__ = [
-    'XHSPublisher',
     'XHSFileUploader', 
     'XHSContentFiller',
-    'XHSDataCollector'
+    'XHSTopicAutomation',
+    'AdvancedXHSTopicAutomation',
+    'XHSPublisher',
+    'XHSDataCollector',
 ] 

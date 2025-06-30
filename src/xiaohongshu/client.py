@@ -21,6 +21,7 @@ from ..auth.cookie_manager import CookieManager
 from ..utils.text_utils import clean_text_for_browser, truncate_text
 from ..utils.logger import get_logger
 from .models import XHSNote, XHSSearchResult, XHSUser, XHSPublishResult
+from .components.content_filler import XHSContentFiller
 
 logger = get_logger(__name__)
 
@@ -39,6 +40,7 @@ class XHSClient:
         self.browser_manager = ChromeDriverManager(config)
         self.cookie_manager = CookieManager(config)
         self.session = requests.Session()
+        self.content_filler = None  # 延迟初始化，需要browser_manager运行时才能创建
         self._setup_session()
     
     def _setup_session(self) -> None:
@@ -104,10 +106,13 @@ class XHSClient:
         try:
             logger.info("🌐 直接访问小红书发布页面...")
             driver.get("https://creator.xiaohongshu.com/publish/publish?from=menu")
-            await asyncio.sleep(5)  # 增加等待时间
+            await asyncio.sleep(5)  # 等待页面基本加载
             
             if "publish" not in driver.current_url:
                 raise PublishError("无法访问发布页面，可能需要重新登录", publish_step="页面访问")
+            
+            logger.info("⏳ 等待页面元素完全渲染...")
+            await asyncio.sleep(3)  # 等待页面元素完全渲染
             
             # 根据内容类型切换发布模式
             await self._switch_publish_mode(note)
@@ -326,6 +331,10 @@ class XHSClient:
         driver = self.browser_manager.driver
         wait = WebDriverWait(driver, 15)
         
+        # 初始化content_filler（如果还没初始化）
+        if not self.content_filler:
+            self.content_filler = XHSContentFiller(self.browser_manager)
+        
         await asyncio.sleep(2)  # 等待上传完成
         
         # 填写标题
@@ -408,6 +417,20 @@ class XHSClient:
             
         except Exception as e:
             raise PublishError(f"填写内容失败: {str(e)}", publish_step="填写内容") from e
+        
+        # 填写话题
+        if note.topics and len(note.topics) > 0:
+            try:
+                logger.info(f"🏷️ 开始填写话题: {note.topics}")
+                success = await self.content_filler.fill_topics(note.topics)
+                if success:
+                    logger.info("✅ 话题填写成功")
+                else:
+                    logger.warning("⚠️ 话题填写失败，但继续发布流程")
+            except Exception as e:
+                logger.warning(f"⚠️ 话题填写出错: {e}，继续发布流程")
+        else:
+            logger.info("📋 没有话题需要填写")
         
         await asyncio.sleep(2)
     

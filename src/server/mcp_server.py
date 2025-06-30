@@ -234,7 +234,7 @@ class MCPServer:
         
         @self.mcp.tool()
         async def smart_publish_note(title: str, content: str, images=None, videos=None, 
-                                   tags=None, location: str = "") -> str:
+                                   topics=None, location: str = "") -> str:
             """
             发布小红书笔记（支持多种输入格式）
             
@@ -249,7 +249,7 @@ class MCPServer:
                        - 混合数组：["local.jpg", "https://example.com/img.jpg"]
                        - 逗号分隔字符串："a.jpg,b.jpg,c.jpg"
                 videos: 视频路径（目前仅支持本地文件）
-                tags: 标签，支持字符串或数组格式
+                topics: 话题，支持字符串或数组格式
                 location (str, optional): 位置信息
             
             Returns:
@@ -265,21 +265,21 @@ class MCPServer:
                 
             """
             logger.info(f"🚀 启动发布任务: 标题='{title}'")
-            logger.debug(f"📋 参数详情: images={images}, videos={videos}, tags={tags}")
+            logger.debug(f"📋 参数详情: images={images}, videos={videos}, topics={topics}")
             
             try:
                 # 使用异步智能创建方法
                 note = await XHSNote.async_smart_create(
                     title=title,
                     content=content,
-                    tags=tags,
+                    topics=topics,
                     location=location,
                     images=images,
                     videos=videos
                 )
                 
                 # 记录解析结果
-                logger.info(f"✅ 智能解析结果: 图片{len(note.images) if note.images else 0}张, 视频{len(note.videos) if note.videos else 0}个, 标签{len(note.tags) if note.tags else 0}个")
+                logger.info(f"✅ 智能解析结果: 图片{len(note.images) if note.images else 0}张, 视频{len(note.videos) if note.videos else 0}个, 话题{len(note.topics) if note.topics else 0}个")
                 
                 # 创建异步任务
                 task_id = self.task_manager.create_task(note)
@@ -296,10 +296,10 @@ class MCPServer:
                     "parsing_result": {
                         "images_parsed": note.images if note.images else [],
                         "videos_parsed": note.videos if note.videos else [],
-                        "tags_parsed": note.tags if note.tags else [],
+                        "topics_parsed": note.topics if note.topics else [],
                         "images_count": len(note.images) if note.images else 0,
                         "videos_count": len(note.videos) if note.videos else 0,
-                        "tags_count": len(note.tags) if note.tags else 0,
+                        "topics_count": len(note.topics) if note.topics else 0,
                         "content_type": "图文" if note.images else "视频" if note.videos else "纯文本"
                     }
                 }

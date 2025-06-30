@@ -62,9 +62,37 @@ def truncate_text(text: str, max_length: int, suffix: str = "...") -> str:
     return text[:max_length - len(suffix)] + suffix
 
 
+def parse_topics_string(topics_string: str) -> List[str]:
+    """
+    解析话题字符串
+    
+    Args:
+        topics_string: 话题字符串，用逗号分隔
+        
+    Returns:
+        话题列表
+    """
+    if not topics_string:
+        return []
+    
+    # 分割并清理话题
+    topics = [topic.strip() for topic in topics_string.split(",") if topic.strip()]
+    
+    # 移除重复话题（保持顺序）
+    unique_topics = []
+    seen = set()
+    for topic in topics:
+        if topic not in seen:
+            unique_topics.append(topic)
+            seen.add(topic)
+    
+    return unique_topics
+
+
+# 为了向后兼容，保留原函数名
 def parse_tags_string(tags_string: str) -> List[str]:
     """
-    解析标签字符串
+    解析标签字符串（已废弃，请使用parse_topics_string）
     
     Args:
         tags_string: 标签字符串，用逗号分隔
@@ -72,21 +100,7 @@ def parse_tags_string(tags_string: str) -> List[str]:
     Returns:
         标签列表
     """
-    if not tags_string:
-        return []
-    
-    # 分割并清理标签
-    tags = [tag.strip() for tag in tags_string.split(",") if tag.strip()]
-    
-    # 移除重复标签（保持顺序）
-    unique_tags = []
-    seen = set()
-    for tag in tags:
-        if tag not in seen:
-            unique_tags.append(tag)
-            seen.add(tag)
-    
-    return unique_tags
+    return parse_topics_string(tags_string)
 
 
 def parse_file_paths_string(paths_string: str) -> List[str]:

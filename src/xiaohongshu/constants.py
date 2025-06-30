@@ -56,8 +56,8 @@ class XHSConfig:
     MAX_VIDEOS = 1
     MAX_TITLE_LENGTH = 50
     MAX_CONTENT_LENGTH = 1000
-    MAX_TAGS = 10
-    MAX_TAG_LENGTH = 20
+    MAX_TOPICS = 10
+    MAX_TOPIC_LENGTH = 20
     
     # 支持的文件格式
     SUPPORTED_IMAGE_FORMATS = ['.jpg', '.jpeg', '.png', '.webp', '.gif']

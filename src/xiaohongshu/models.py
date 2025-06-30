@@ -9,9 +9,9 @@ from pydantic import BaseModel, field_validator
 
 # 尝试相对导入，失败则使用绝对导入
 try:
-    from ..utils.text_utils import validate_note_content, parse_tags_string, parse_file_paths_string, smart_parse_file_paths
+    from ..utils.text_utils import validate_note_content, parse_topics_string, parse_file_paths_string, smart_parse_file_paths
 except ImportError:
-    from src.utils.text_utils import validate_note_content, parse_tags_string, parse_file_paths_string, smart_parse_file_paths
+    from src.utils.text_utils import validate_note_content, parse_topics_string, parse_file_paths_string, smart_parse_file_paths
 
 
 class XHSNote(BaseModel):
@@ -21,7 +21,7 @@ class XHSNote(BaseModel):
     content: str
     images: Optional[List[str]] = None
     videos: Optional[List[str]] = None
-    tags: Optional[List[str]] = None
+    topics: Optional[List[str]] = None
     location: Optional[str] = None
     
     @field_validator('title')
@@ -92,21 +92,21 @@ class XHSNote(BaseModel):
         
         return v
     
-    @field_validator('tags')
+    @field_validator('topics')
     @classmethod
-    def validate_tags(cls, v):
-        """验证标签列表"""
+    def validate_topics(cls, v):
+        """验证话题列表"""
         if v is None:
             return v
-        
-        # 限制标签数量
+            
+        # 限制话题数量
         if len(v) > 10:
-            raise ValueError("标签数量不能超过10个")
+            raise ValueError("话题数量不能超过10个")
         
-        # 检查标签长度
-        for tag in v:
-            if len(tag) > 20:
-                raise ValueError(f"标签长度不能超过20个字符: {tag}")
+        # 检查话题长度
+        for topic in v:
+            if len(topic) > 20:
+                raise ValueError(f"话题长度不能超过20个字符: {topic}")
         
         return v
     
@@ -130,7 +130,7 @@ class XHSNote(BaseModel):
             raise ValueError("必须上传至少1张图片或1个视频")
     
     @classmethod
-    def from_strings(cls, title: str, content: str, tags_str: str = "", 
+    def from_strings(cls, title: str, content: str, topics_str: str = "", 
                     location: str = "", images_str: str = "", videos_str: str = "") -> 'XHSNote':
         """
         从字符串参数创建笔记对象
@@ -138,7 +138,7 @@ class XHSNote(BaseModel):
         Args:
             title: 笔记标题
             content: 笔记内容
-            tags_str: 标签字符串（逗号分隔）
+            topics_str: 话题字符串（逗号分隔）
             location: 位置信息
             images_str: 图片路径字符串（支持多种格式：逗号分隔、数组字符串、JSON数组等）
             videos_str: 视频路径字符串（支持多种格式：逗号分隔、数组字符串、JSON数组等）
@@ -146,7 +146,7 @@ class XHSNote(BaseModel):
         Returns:
             XHSNote实例
         """
-        tag_list = parse_tags_string(tags_str) if tags_str else None
+        topic_list = parse_topics_string(topics_str) if topics_str else None
         image_list = smart_parse_file_paths(images_str) if images_str else None
         video_list = smart_parse_file_paths(videos_str) if videos_str else None
         
@@ -155,12 +155,12 @@ class XHSNote(BaseModel):
             content=content,
             images=image_list,
             videos=video_list,
-            tags=tag_list,
+            topics=topic_list,
             location=location if location else None
         )
 
     @classmethod  
-    def smart_create(cls, title: str, content: str, tags=None, 
+    def smart_create(cls, title: str, content: str, topics=None, 
                     location: str = "", images=None, videos=None) -> 'XHSNote':
         """
         智能创建笔记对象，支持多种输入格式
@@ -168,7 +168,7 @@ class XHSNote(BaseModel):
         Args:
             title: 笔记标题
             content: 笔记内容
-            tags: 标签（支持字符串、列表等多种格式）
+            topics: 话题（支持字符串、列表等多种格式）
             location: 位置信息
             images: 图片路径（支持字符串、列表、JSON等多种格式）
             videos: 视频路径（支持字符串、列表、JSON等多种格式）
@@ -176,16 +176,16 @@ class XHSNote(BaseModel):
         Returns:
             XHSNote实例
         """
-        # 智能解析标签
-        if tags:
-            if isinstance(tags, str):
-                tag_list = parse_tags_string(tags)
-            elif isinstance(tags, (list, tuple)):
-                tag_list = [str(tag).strip() for tag in tags if str(tag).strip()]
+        # 智能解析话题
+        if topics:
+            if isinstance(topics, str):
+                topic_list = parse_topics_string(topics)
+            elif isinstance(topics, (list, tuple)):
+                topic_list = [str(topic).strip() for topic in topics if str(topic).strip()]
             else:
-                tag_list = parse_tags_string(str(tags))
+                topic_list = parse_topics_string(str(topics))
         else:
-            tag_list = None
+            topic_list = None
         
         # 智能解析图片路径
         image_list = smart_parse_file_paths(images) if images else None
@@ -198,12 +198,12 @@ class XHSNote(BaseModel):
             content=content,
             images=image_list,
             videos=video_list,
-            tags=tag_list,
+            topics=topic_list,
             location=location if location else None
         )
     
     @classmethod
-    async def async_smart_create(cls, title: str, content: str, tags=None,
+    async def async_smart_create(cls, title: str, content: str, topics=None,
                                 location: str = "", images=None, videos=None) -> 'XHSNote':
         """
         异步智能创建笔记对象，支持多种输入格式（包括URL）
@@ -211,7 +211,7 @@ class XHSNote(BaseModel):
         Args:
             title: 笔记标题
             content: 笔记内容
-            tags: 标签（支持字符串、列表等多种格式）
+            topics: 话题（支持字符串、列表等多种格式）
             location: 位置信息
             images: 图片，支持格式：
                    - 本地路径："image.jpg" 或 ["/path/to/image.jpg"]
@@ -222,16 +222,16 @@ class XHSNote(BaseModel):
         Returns:
             XHSNote实例
         """
-        # 智能解析标签
-        if tags:
-            if isinstance(tags, str):
-                tag_list = parse_tags_string(tags)
-            elif isinstance(tags, (list, tuple)):
-                tag_list = [str(tag).strip() for tag in tags if str(tag).strip()]
+        # 智能解析话题
+        if topics:
+            if isinstance(topics, str):
+                topic_list = parse_topics_string(topics)
+            elif isinstance(topics, (list, tuple)):
+                topic_list = [str(topic).strip() for topic in topics if str(topic).strip()]
             else:
-                tag_list = parse_tags_string(str(tags))
+                topic_list = parse_topics_string(str(topics))
         else:
-            tag_list = None
+            topic_list = None
         
         # 处理图片（支持URL）
         processed_images = None
@@ -248,7 +248,7 @@ class XHSNote(BaseModel):
             content=content,
             images=processed_images,
             videos=video_list,
-            tags=tag_list,
+            topics=topic_list,
             location=location if location else None
         )
 
