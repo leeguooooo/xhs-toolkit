@@ -6,6 +6,8 @@
 
 import asyncio
 import time
+import os
+import platform
 from typing import Optional, List, Dict, Any
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -57,11 +59,16 @@ class ChromeDriverManager:
             # 设置Chrome选项
             chrome_options = self._create_chrome_options()
             
-            # 设置Chrome服务
-            service = self._create_chrome_service()
-            
             # 创建驱动
-            self.driver = webdriver.Chrome(service=service, options=chrome_options)
+            if self.config.enable_remote_browser:
+                debugger_address = f"{self.config.remote_browser_host}:{self.config.remote_browser_port}/wd/hub"
+                logger.info(f"🌐 连接到远程浏览器: {debugger_address}")
+                logger.debug("远程浏览器连接选项配置完成")
+                self.driver = webdriver.Remote(command_executor=debugger_address, options=chrome_options)
+            else:
+                # 设置Chrome服务
+                service = self._create_chrome_service()
+                self.driver = webdriver.Chrome(service=service, options=chrome_options)
             
             self.is_initialized = True
             
@@ -77,6 +84,9 @@ class ChromeDriverManager:
     def _create_chrome_options(self) -> Options:
         """创建Chrome选项"""
         chrome_options = Options()
+        
+        # 本地浏览器启动配置
+        logger.info("🖥️ 启用本地浏览器模式")
         
         # 基础选项
         chrome_options.add_argument('--no-sandbox')
@@ -122,8 +132,6 @@ class ChromeDriverManager:
             chrome_options.add_argument('--start-maximized')
             
             logger.info("🔒 启用强制无头浏览器模式（双重保险）")
-        else:
-            logger.info("🖥️ 启用有界面浏览器模式")
         
         # 设置Chrome可执行文件路径
         if self.config.chrome_path:
@@ -148,6 +156,12 @@ class ChromeDriverManager:
         
         # 窗口大小
         chrome_options.add_argument('--window-size=1920,1080')
+
+        # 跨平台用户数据目录
+        user_data_dir = self._get_user_data_dir()
+        if user_data_dir:
+            chrome_options.add_argument(f'--user-data-dir={user_data_dir}')
+            logger.debug(f"设置用户数据目录: {user_data_dir}")
         
         # 调试选项
         if self.config.debug_mode:
@@ -155,13 +169,12 @@ class ChromeDriverManager:
             chrome_options.add_argument('--log-level=0')
             logger.debug("已启用Chrome调试日志")
         
-        logger.debug("Chrome选项配置完成")
+        logger.debug("本地浏览器选项配置完成")
         return chrome_options
     
     def _create_chrome_service(self) -> Service:
         """创建Chrome服务"""
         service_args = []
-        
         # 设置ChromeDriver路径
         chromedriver_path = self.config.chromedriver_path
         if chromedriver_path:
@@ -172,6 +185,39 @@ class ChromeDriverManager:
             service = Service(service_args=service_args)
         
         return service
+    
+    def _get_user_data_dir(self) -> Optional[str]:
+        """
+        获取跨平台的Chrome用户数据目录
+        
+        Returns:
+            用户数据目录路径，如果无法创建则返回None
+        """
+        try:
+            system = platform.system()
+            
+            if system == "Windows":
+                # Windows系统
+                base_dir = os.path.expanduser("~\\AppData\\Local\\XHS-Toolkit")
+            elif system == "Darwin":
+                # macOS系统
+                base_dir = os.path.expanduser("~/Library/Application Support/XHS-Toolkit")
+            elif system == "Linux":
+                # Linux系统
+                base_dir = os.path.expanduser("~/.local/share/XHS-Toolkit")
+            else:
+                # 其他系统，使用通用路径
+                base_dir = os.path.expanduser("~/.xhs-toolkit")
+            
+            # 确保目录存在
+            chrome_data_dir = os.path.join(base_dir, "chrome-data")
+            os.makedirs(chrome_data_dir, exist_ok=True)
+            
+            return chrome_data_dir
+            
+        except Exception as e:
+            logger.warning(f"创建用户数据目录失败: {e}")
+            return None
     
     @handle_exception
     def navigate_to_creator_center(self) -> None:
